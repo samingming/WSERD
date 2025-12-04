@@ -1,0 +1,317 @@
+datasource db {
+  provider = "mysql"
+  // url 은 prisma.config.ts 에서 설정되어 있으니 여기엔 안 씀
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+/// =======================
+///   USERS & AUTH
+/// =======================
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique               // users.email
+  passwordHash String   @map("password_hash") // 비밀번호 해시
+  name         String
+  phone        String?  // nullable
+  birthDate    DateTime? @map("birth_date")   // DATE
+  role         String    // 'user' | 'admin'
+  status       String    // 계정 상태 (활성/비활성 등)
+  region       String?   // 지역 정보
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt          @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // relations
+  refreshTokens RefreshToken[]
+  reviews       Review[]
+  comments      Comment[]
+  reviewLikes   ReviewLike[]
+  commentLikes  CommentLike[]
+  wishlists     Wishlist[]
+  userLibrary   UserLibrary[]
+  carts         Cart[]
+  orders        Order[]
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  tokenHash String   @map("token_hash") @unique
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+/// =======================
+///   AUTHORS / CATEGORIES
+/// =======================
+
+model Author {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  bio       String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  bookAuthors BookAuthor[]
+}
+
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  parentId  Int?     @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  parent   Category? @relation("CategoryToParent", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryToParent")
+
+  bookCategories BookCategory[]
+}
+
+/// =======================
+///   BOOKS & N:M TABLES
+/// =======================
+
+model Book {
+  id            Int      @id @default(autoincrement())
+  isbn13        String?  // varchar(13), nullable 허용
+  title         String
+  description   String?
+  price         Decimal  @db.Decimal(12, 2)
+  stock         Int
+  languageCode  String?  @map("language_code")
+  pageCount     Int?     @map("page_count")
+  coverUrl      String?  @map("cover_url")
+  publishedAt   DateTime? @map("published_at")
+  avgRating     Decimal  @default(0.0) @map("avg_rating")   @db.Decimal(3, 2)
+  reviewCount   Int      @default(0)   @map("review_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt      @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  bookAuthors    BookAuthor[]
+  bookCategories BookCategory[]
+  reviews        Review[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  wishlists      Wishlist[]
+  userLibrary    UserLibrary[]
+}
+
+model BookAuthor {
+  bookId      Int @map("book_id")
+  authorId    Int @map("author_id")
+  authorOrder Int? @map("author_order")
+
+  book   Book   @relation(fields: [bookId], references: [id])
+  author Author @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@id([bookId, authorId])
+  @@index([authorId])
+}
+
+model BookCategory {
+  bookId     Int @map("book_id")
+  categoryId Int @map("category_id")
+
+  book     Book     @relation(fields: [bookId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  @@id([bookId, categoryId])
+  @@index([categoryId])
+}
+
+/// =======================
+///   REVIEWS / COMMENTS
+/// =======================
+
+model Review {
+  id           Int      @id @default(autoincrement())
+  bookId       Int      @map("book_id")
+  userId       Int      @map("user_id")
+  title        String?  // VARCHAR(100/200)
+  body         String
+  rating       Int      // 1~5 (애플리케이션 단에서 검증)
+  likeCount    Int      @default(0) @map("like_count")
+  commentCount Int      @default(0) @map("comment_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt      @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  user      User    @relation(fields: [userId], references: [id])
+  book      Book    @relation(fields: [bookId], references: [id])
+  comments  Comment[]
+  likes     ReviewLike[]
+
+  @@index([bookId])
+  @@index([userId])
+}
+
+model Comment {
+  id              Int      @id @default(autoincrement())
+  reviewId        Int      @map("review_id")
+  parentCommentId Int?     @map("parent_comment_id")
+  userId          Int      @map("user_id")
+  body            String   // VARCHAR(500) or TEXT
+  likeCount       Int      @default(0) @map("like_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt      @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  review  Review   @relation(fields: [reviewId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  parent  Comment? @relation("CommentToParent", fields: [parentCommentId], references: [id])
+  children Comment[] @relation("CommentToParent")
+  likes   CommentLike[]
+
+  @@index([reviewId])
+  @@index([userId])
+  @@index([parentCommentId])
+}
+
+model ReviewLike {
+  id        Int      @id @default(autoincrement())
+  reviewId  Int      @map("review_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([reviewId, userId]) // 한 유저가 한 리뷰에 한 번만 좋아요
+  @@index([userId])
+}
+
+model CommentLike {
+  id        Int      @id @default(autoincrement())
+  commentId Int      @map("comment_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  comment Comment @relation(fields: [commentId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([commentId, userId])
+  @@index([userId])
+}
+
+/// =======================
+///   WISHLIST / LIBRARY
+/// =======================
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  bookId    Int      @map("book_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId]) // 한 도서는 한 번만 위시리스트 추가
+  @@index([bookId])
+}
+
+model UserLibrary {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  bookId     Int      @map("book_id")
+  acquiredAt DateTime @map("acquired_at")
+  source     String?  // 'purchase', 'gift' 등
+
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([userId, bookId])
+  @@index([bookId])
+}
+
+/// =======================
+///   CART / ORDERS
+/// =======================
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  status    String   // 'active' 등
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
+
+  @@unique([userId]) // 유저당 카트 1개
+}
+
+model CartItem {
+  id         Int      @id @default(autoincrement())
+  cartId     Int      @map("cart_id")
+  bookId     Int      @map("book_id")
+  quantity   Int
+  unitPrice  Decimal  @map("unit_price") @db.Decimal(12, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt      @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  cart Cart @relation(fields: [cartId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+
+  @@unique([cartId, bookId]) // 한 카트에 같은 책 한 번만
+  @@index([bookId])
+}
+
+model Order {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  status    String
+  itemTotal      Decimal @map("item_total")      @db.Decimal(12, 2)
+  discountTotal  Decimal @map("discount_total")  @db.Decimal(12, 2)
+  shippingFee    Decimal @map("shipping_fee")    @db.Decimal(12, 2)
+  totalAmount    Decimal @map("total_amount")    @db.Decimal(12, 2)
+  cancelledAt    DateTime? @map("cancelled_at")
+  customerName   String    @map("customer_name_snapshot")
+  customerEmail  String    @map("customer_email_snapshot")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt      @map("updated_at")
+
+  user   User?       @relation(fields: [userId], references: [id])
+  items  OrderItem[]
+
+  @@index([userId])
+}
+
+model OrderItem {
+  id           Int      @id @default(autoincrement())
+  orderId      Int      @map("order_id")
+  bookId       Int      @map("book_id")
+  titleSnapshot String  @map("title_snapshot")
+  unitPrice    Decimal  @map("unit_price") @db.Decimal(12, 2)
+  quantity     Int
+  subtotal     Decimal  @db.Decimal(12, 2)
+
+  order Order @relation(fields: [orderId], references: [id])
+  book  Book  @relation(fields: [bookId], references: [id])
+
+  @@index([orderId])
+  @@index([bookId])
+}
