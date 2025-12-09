@@ -1,5 +1,6 @@
 // src/utils/security.ts
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = (process.env.JWT_SECRET ?? 'dev-secret') as string;
@@ -40,7 +41,20 @@ export function signRefreshToken(userId: number, role: string) {
     sub: userId,
     role,
     type: 'refresh' as const,
+    jti: crypto.randomUUID(),
   };
 
   return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_EXPIRES_IN });
+}
+
+export function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+export function getJwtExpirationDate(token: string): Date | null {
+  const decoded = jwt.decode(token) as { exp?: number } | null;
+  if (!decoded || typeof decoded === 'string' || !decoded.exp) {
+    return null;
+  }
+  return new Date(decoded.exp * 1000);
 }

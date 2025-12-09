@@ -9,7 +9,9 @@ describe('Auth API', () => {
     name: 'JestUser',
   };
 
-  it('회원가입 성공', async () => {
+  let latestRefreshToken: string;
+
+  it('registers a user', async () => {
     const res = await request(app).post('/auth/signup').send(baseUser);
 
     expect(res.status).toBe(201);
@@ -17,14 +19,14 @@ describe('Auth API', () => {
     expect(res.body.data.email).toBe(baseUser.email);
   });
 
-  it('회원가입 - 중복 이메일이면 409', async () => {
+  it('rejects duplicate registration', async () => {
     const res = await request(app).post('/auth/signup').send(baseUser);
 
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('DUPLICATE_RESOURCE');
   });
 
-  it('로그인 성공 시 accessToken, refreshToken을 반환', async () => {
+  it('logs in and returns tokens', async () => {
     const res = await request(app).post('/auth/login').send({
       email: baseUser.email,
       password: baseUser.password,
@@ -33,9 +35,10 @@ describe('Auth API', () => {
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('accessToken');
     expect(res.body.data).toHaveProperty('refreshToken');
+    latestRefreshToken = res.body.data.refreshToken;
   });
 
-  it('로그인 실패 - 비밀번호 틀리면 401', async () => {
+  it('fails login with wrong password', async () => {
     const res = await request(app).post('/auth/login').send({
       email: baseUser.email,
       password: 'wrong-password',
@@ -43,5 +46,31 @@ describe('Auth API', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.code).toBe('UNAUTHORIZED');
+  });
+
+  it('reissues tokens using refresh token', async () => {
+    const res = await request(app).post('/auth/refresh').send({
+      refreshToken: latestRefreshToken,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveProperty('accessToken');
+    expect(res.body.data).toHaveProperty('refreshToken');
+    latestRefreshToken = res.body.data.refreshToken;
+  });
+
+  it('invalidates refresh token on logout', async () => {
+    const logoutRes = await request(app).post('/auth/logout').send({
+      refreshToken: latestRefreshToken,
+    });
+
+    expect(logoutRes.status).toBe(200);
+
+    const retry = await request(app).post('/auth/refresh').send({
+      refreshToken: latestRefreshToken,
+    });
+
+    expect(retry.status).toBe(401);
+    expect(['UNAUTHORIZED', 'TOKEN_EXPIRED']).toContain(retry.body.code);
   });
 });

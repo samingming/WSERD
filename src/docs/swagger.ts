@@ -12,7 +12,7 @@ const swaggerSpec = {
   },
   servers: [
     {
-      url: 'http://localhost:8080',
+      url: 'http://localhost:2000',
       description: 'Local dev server',
     },
   ],
@@ -56,6 +56,26 @@ const swaggerSpec = {
           role: { type: 'string', example: 'USER' },
           status: { type: 'string', example: 'ACTIVE' },
           createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      Category: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          name: { type: 'string' },
+          parentId: { type: 'integer', nullable: true },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      Author: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          name: { type: 'string' },
+          bio: { type: 'string' },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' },
         },
       },
       Book: {
@@ -483,6 +503,262 @@ const swaggerSpec = {
           401: { description: 'UNAUTHORIZED' },
           403: { description: 'FORBIDDEN' },
           404: { description: 'RESOURCE_NOT_FOUND' },
+        },
+      },
+    },
+
+    // ---------- Categories ----------
+    '/categories': {
+      get: {
+        tags: ['Categories'],
+        summary: '카테고리 목록 조회',
+        parameters: [
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+          {
+            name: 'parentId',
+            in: 'query',
+            schema: { type: 'string', example: 'root' },
+            description: 'root/null = 상위 없음, 숫자는 상위 ID',
+          },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 0 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 10 } },
+          {
+            name: 'sort',
+            in: 'query',
+            schema: { type: 'string', example: 'name,ASC' },
+          },
+        ],
+        responses: {
+          200: {
+            description: '조회 성공',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    content: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/Category' },
+                    },
+                    page: { type: 'integer', example: 0 },
+                    size: { type: 'integer', example: 10 },
+                    totalElements: { type: 'integer', example: 1 },
+                    totalPages: { type: 'integer', example: 1 },
+                    sort: { type: 'string', example: 'name,ASC' },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: 'INVALID_QUERY_PARAM' },
+        },
+      },
+      post: {
+        tags: ['Categories'],
+        summary: '카테고리 생성 (ADMIN)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                  name: { type: 'string' },
+                  parentId: { type: 'integer', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: '생성 성공' },
+          400: { description: 'VALIDATION_FAILED' },
+          401: { description: 'UNAUTHORIZED' },
+          403: { description: 'FORBIDDEN' },
+          404: { description: 'RESOURCE_NOT_FOUND (부모 없음)' },
+        },
+      },
+    },
+    '/categories/{id}': {
+      get: {
+        tags: ['Categories'],
+        summary: '카테고리 상세 조회',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
+        responses: {
+          200: { description: '조회 성공' },
+          404: { description: 'RESOURCE_NOT_FOUND' },
+        },
+      },
+      patch: {
+        tags: ['Categories'],
+        summary: '카테고리 수정 (ADMIN)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  parentId: { type: 'integer', nullable: true },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '수정 성공' },
+          400: { description: 'VALIDATION_FAILED / BAD_REQUEST' },
+          401: { description: 'UNAUTHORIZED' },
+          403: { description: 'FORBIDDEN' },
+          404: { description: 'RESOURCE_NOT_FOUND' },
+        },
+      },
+      delete: {
+        tags: ['Categories'],
+        summary: '카테고리 삭제 (ADMIN)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
+        responses: {
+          200: { description: '삭제 성공' },
+          401: { description: 'UNAUTHORIZED' },
+          403: { description: 'FORBIDDEN' },
+          404: { description: 'RESOURCE_NOT_FOUND' },
+          409: { description: 'STATE_CONFLICT (연결 데이터 있음)' },
+        },
+      },
+    },
+
+    // ---------- Authors ----------
+    '/authors': {
+      get: {
+        tags: ['Authors'],
+        summary: '작가 목록 조회',
+        parameters: [
+          { name: 'keyword', in: 'query', schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', default: 0 } },
+          { name: 'size', in: 'query', schema: { type: 'integer', default: 10 } },
+          {
+            name: 'sort',
+            in: 'query',
+            schema: { type: 'string', example: 'name,ASC' },
+          },
+        ],
+        responses: {
+          200: {
+            description: '조회 성공',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    content: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/Author' },
+                    },
+                    page: { type: 'integer', example: 0 },
+                    size: { type: 'integer', example: 10 },
+                    totalElements: { type: 'integer', example: 1 },
+                    totalPages: { type: 'integer', example: 1 },
+                    sort: { type: 'string', example: 'name,ASC' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        tags: ['Authors'],
+        summary: '작가 생성 (ADMIN)',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                  name: { type: 'string' },
+                  bio: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          201: { description: '생성 성공' },
+          400: { description: 'VALIDATION_FAILED' },
+          401: { description: 'UNAUTHORIZED' },
+          403: { description: 'FORBIDDEN' },
+        },
+      },
+    },
+    '/authors/{id}': {
+      get: {
+        tags: ['Authors'],
+        summary: '작가 상세 조회',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
+        responses: {
+          200: { description: '조회 성공' },
+          404: { description: 'RESOURCE_NOT_FOUND' },
+        },
+      },
+      patch: {
+        tags: ['Authors'],
+        summary: '작가 수정 (ADMIN)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  bio: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: '수정 성공' },
+          400: { description: 'VALIDATION_FAILED' },
+          401: { description: 'UNAUTHORIZED' },
+          403: { description: 'FORBIDDEN' },
+          404: { description: 'RESOURCE_NOT_FOUND' },
+        },
+      },
+      delete: {
+        tags: ['Authors'],
+        summary: '작가 삭제 (ADMIN)',
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'integer' } },
+        ],
+        responses: {
+          200: { description: '삭제 성공' },
+          401: { description: 'UNAUTHORIZED' },
+          403: { description: 'FORBIDDEN' },
+          404: { description: 'RESOURCE_NOT_FOUND' },
+          409: { description: 'STATE_CONFLICT (연결된 도서)' },
         },
       },
     },
