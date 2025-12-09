@@ -566,7 +566,6 @@ const swaggerSpec = {
                 required: ['name'],
                 properties: {
                   name: { type: 'string' },
-                  parentId: { type: 'integer', nullable: true },
                 },
               },
             },
@@ -608,7 +607,6 @@ const swaggerSpec = {
                 type: 'object',
                 properties: {
                   name: { type: 'string' },
-                  parentId: { type: 'integer', nullable: true },
                 },
               },
             },
