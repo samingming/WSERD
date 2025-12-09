@@ -208,10 +208,24 @@ const swaggerSpec = {
       post: {
         tags: ['Auth'],
         summary: 'Access Token 재발급',
-        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['refreshToken'],
+                properties: {
+                  refreshToken: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
         responses: {
           200: { description: '토큰 재발급 성공' },
           401: { description: 'UNAUTHORIZED / TOKEN_EXPIRED' },
+          400: { description: 'VALIDATION_FAILED' },
         },
       },
     },
@@ -219,9 +233,23 @@ const swaggerSpec = {
       post: {
         tags: ['Auth'],
         summary: '로그아웃 (서버 측 토큰 무효화 시나리오용)',
-        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['refreshToken'],
+                properties: {
+                  refreshToken: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
         responses: {
           200: { description: '로그아웃 처리' },
+          400: { description: 'VALIDATION_FAILED' },
         },
       },
     },
