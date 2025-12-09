@@ -10,8 +10,8 @@ POST http://localhost:2000/auth/signup
 Content-Type: application/json
 
 {
-  "email": "user1@example.com",
-  "password": "P@ssw0rd!",
+  "email": "sam@example.com",
+  "password": "123456789!",
   "name": "홍길동"
 }
 
