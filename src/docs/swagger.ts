@@ -12,8 +12,8 @@ const swaggerSpec = {
   },
   servers: [
     {
-      url: 'http://localhost:2000',
-      description: 'Local dev server',
+      url: '/',
+    description: 'Current server'
     },
   ],
   components: {
