@@ -1,10 +1,11 @@
 # WSERD Bookstore API
 
-TypeScript 기반 Express + Prisma + MySQL/MariaDB 북스토어 REST API. JWT 인증/인가(USER/ADMIN), 페이지네이션·검색·정렬, Soft Delete, Swagger, Postman, Jest 테스트를 제공합니다.
+온라인 서점 도메인의 백엔드 REST API입니다. TypeScript + Express + Prisma + MySQL/MariaDB 스택으로 작성되었고, JWT 인증/인가(USER/ADMIN), 도서/카테고리/작가/리뷰/주문 CRUD, 검색/페이징/정렬, Soft Delete, Swagger, Postman, Jest 테스트를 제공합니다.
 
-## 프로젝트 개요
-- 문제정의: 서점 도메인(회원/인증/도서/리뷰/주문) 백엔드 API.
-- 주요 기능: 회원 가입/로그인/토큰 재발급, 도서/카테고리/작가 CRUD, 리뷰/좋아요, 주문 생성·조회·취소, 관리자 통계, RBAC(USER/ADMIN), 레이트리밋.
+## 프로젝트 설명
+- 목적: 온라인 서점 CRUD와 RBAC(USER/ADMIN)을 갖춘 실습/과제용 백엔드
+- 주요 기능: 회원가입·로그인(리프레시 토큰), 도서/카테고리/작가 CRUD, 리뷰·좋아요, 주문 생성·조회·취소, 관리자 통계, Swagger 문서 및 Postman 컬렉션 제공
+- 기술 스택: Node.js(Express), TypeScript, Prisma, MySQL/MariaDB, JWT, Jest
 
 ## 실행 방법
 ```bash
@@ -42,7 +43,6 @@ npm test
 - Base URL: `http://113.198.66.68:10038`
 - Swagger: `http://113.198.66.68:10038/api-docs`
 - Health: `http://113.198.66.68:10038/health`
-- 프로세스 매니저: PM2 (`pm2 list`, `pm2 save`, `pm2 startup`)
 
 ## 인증 플로우
 1. `POST /auth/signup` 회원가입
@@ -99,6 +99,12 @@ npm test
 | PATCH | /orders/:id/status | 주문 상태 변경 | ADMIN |
 | GET | /stats/summary | 요약 통계 | ADMIN |
 | GET | /stats/top-books | 인기 도서 | ADMIN |
+
+## Postman 컬렉션
+- 파일: `postman/wserd.postman_collection.json`
+- 사용: Postman > Import > File 선택 (CLI: `npx newman run postman/wserd.postman_collection.json -e <환경파일>`)
+- 테스트: Error Scenarios 폴더에 400/401/403/404/422 대표 에러 검증 요청 포함
+- 변수: 컬렉션 변수 `baseUrl`을 배포 주소(`http://113.198.66.68:10038`) 또는 로컬 포트로 설정
 
 ## 성능/보안 고려사항
 - JWT + bcrypt 해시, refresh 토큰 해시/저장.
