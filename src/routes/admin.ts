@@ -1,24 +1,55 @@
 // src/routes/admin.ts
 import { Router } from 'express';
+import { z } from 'zod';
 import { prisma } from '../db/prisma';
 import { AuthRequest, requireAdmin } from '../middlewares/auth';
 import { getPagination, buildPagedResponse } from '../utils/pagination';
 
 const router = Router();
 
+const listQuerySchema = z.object({
+  keyword: z.string().optional(),
+  page: z.coerce.number().int().nonnegative().default(0),
+  size: z.coerce.number().int().positive().max(50).default(10),
+  sort: z.string().optional(),
+});
+
+const idParamSchema = z.object({
+  id: z.coerce.number().int().positive(),
+});
+
+const roleBodySchema = z.object({
+  role: z.enum(['USER', 'ADMIN']),
+});
+
 /**
  * GET /admin/users
- * - 전체 유저 목록 조회 (ADMIN 전용)
+ * - 전체 사용자 목록 조회 (ADMIN 전용)
  */
 router.get('/users', requireAdmin, async (req, res): Promise<any> => {
-  const { keyword } = req.query as { keyword?: string };
+  const parsedQuery = listQuerySchema.safeParse(req.query);
+  if (!parsedQuery.success) {
+    return res.status(422).json({
+      timestamp: new Date().toISOString(),
+      path: req.path,
+      status: 422,
+      code: 'INVALID_QUERY_PARAM',
+      message: 'query 파라미터가 올바르지 않습니다.',
+      details: parsedQuery.error.flatten(),
+    });
+  }
 
-  const pagination = getPagination(req.query, {
-    defaultPage: 0,
-    defaultSize: 10,
-    maxSize: 50,
-    defaultSort: 'createdAt,DESC',
-  });
+  const { keyword, page, size, sort } = parsedQuery.data;
+
+  const pagination = getPagination(
+    { page, size, sort },
+    {
+      defaultPage: 0,
+      defaultSize: 10,
+      maxSize: 50,
+      defaultSort: 'createdAt,DESC',
+    },
+  );
 
   let orderBy: any = { createdAt: 'desc' };
   if (pagination.sort) {
@@ -73,7 +104,7 @@ router.get('/users', requireAdmin, async (req, res): Promise<any> => {
     return res.status(200).json({
       status: 'OK',
       statusCode: 200,
-      message: '전체 유저 목록 조회 성공',
+      message: '전체 사용자 목록 조회 성공',
       data: paged,
     });
   } catch (err) {
@@ -91,32 +122,32 @@ router.get('/users', requireAdmin, async (req, res): Promise<any> => {
 
 /**
  * PATCH /admin/users/:id/deactivate
- * - 유저 계정 비활성화 (status = 'INACTIVE')
+ * - 사용자 계정 비활성화 (status = 'INACTIVE')
  */
 router.patch(
   '/users/:id/deactivate',
   requireAdmin,
   async (req: AuthRequest, res) => {
-    const id = Number(req.params.id);
-    if (Number.isNaN(id)) {
-      return res.status(400).json({
+    const parsedParams = idParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(422).json({
         timestamp: new Date().toISOString(),
         path: req.path,
-        status: 400,
-        code: 'BAD_REQUEST',
+        status: 422,
+        code: 'VALIDATION_FAILED',
         message: '유효하지 않은 사용자 ID입니다.',
-        details: { id: req.params.id },
+        details: parsedParams.error.flatten(),
       });
     }
+    const { id } = parsedParams.data;
 
-    // 자기 자신 비활성화 방지 (선택사항이지만 편한 체크)
     if (req.user && req.user.id === id) {
       return res.status(403).json({
         timestamp: new Date().toISOString(),
         path: req.path,
         status: 403,
         code: 'FORBIDDEN',
-        message: '자기 자신은 비활성화할 수 없습니다.',
+        message: '자기 자신을 비활성화할 수 없습니다.',
         details: { id },
       });
     }
@@ -155,35 +186,28 @@ router.patch(
 
 /**
  * PATCH /admin/users/:id/role
- * - 유저 권한 변경 (USER <-> ADMIN)
+ * - 사용자 권한 변경(USER <-> ADMIN)
  */
 router.patch('/users/:id/role', requireAdmin, async (req: AuthRequest, res) => {
-  const id = Number(req.params.id);
-  const { role } = req.body as { role?: string };
+  const parsedParams = idParamSchema.safeParse(req.params);
+  const parsedBody = roleBodySchema.safeParse(req.body);
 
-  if (Number.isNaN(id) || !role) {
-    return res.status(400).json({
+  if (!parsedParams.success || !parsedBody.success) {
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: req.path,
-      status: 400,
-      code: 'BAD_REQUEST',
-      message: 'ID와 role이 모두 필요합니다.',
-      details: { id: req.params.id, role },
+      status: 422,
+      code: 'VALIDATION_FAILED',
+      message: '유효하지 않은 요청입니다.',
+      details: {
+        params: parsedParams.success ? undefined : parsedParams.error.flatten(),
+        body: parsedBody.success ? undefined : parsedBody.error.flatten(),
+      },
     });
   }
 
-  if (!['USER', 'ADMIN'].includes(role)) {
-    return res.status(400).json({
-      timestamp: new Date().toISOString(),
-      path: req.path,
-      status: 400,
-      code: 'INVALID_ROLE',
-      message: 'role은 USER 또는 ADMIN 이어야 합니다.',
-      details: { role },
-    });
-  }
-
-  // 자기 자신 role 변경은 허용(선택적으로 막아도 됨)
+  const { id } = parsedParams.data;
+  const { role } = parsedBody.data;
 
   try {
     const updated = await prisma.user.update({

@@ -33,10 +33,10 @@ const updateStatusSchema = z.object({
 router.post('/', requireAuth, async (req, res): Promise<any> => {
   const parsed = createOrderSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: req.path,
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '요청 데이터가 올바르지 않습니다.',
       details: parsed.error.flatten(),
@@ -383,10 +383,10 @@ router.patch(
 
     const parsed = updateStatusSchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({
+      return res.status(422).json({
         timestamp: new Date().toISOString(),
         path: req.path,
-        status: 400,
+        status: 422,
         code: 'VALIDATION_FAILED',
         message: '요청 데이터가 올바르지 않습니다.',
         details: parsed.error.flatten(),

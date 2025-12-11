@@ -67,10 +67,10 @@ router.post(
 
     const parsed = reviewBodySchema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({
+      return res.status(422).json({
         timestamp: new Date().toISOString(),
         path: req.path,
-        status: 400,
+        status: 422,
         code: 'VALIDATION_FAILED',
         message: '리뷰 데이터가 올바르지 않습니다.',
         details: parsed.error.flatten(),
@@ -156,10 +156,10 @@ router.get(
 
     const parsedQuery = reviewListQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
-      return res.status(400).json({
+      return res.status(422).json({
         timestamp: new Date().toISOString(),
         path: req.path,
-        status: 400,
+        status: 422,
         code: 'INVALID_QUERY_PARAM',
         message: '쿼리 파라미터가 올바르지 않습니다.',
         details: parsedQuery.error.flatten(),
@@ -268,10 +268,10 @@ router.patch(
 
     const parsed = reviewBodySchema.partial().safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({
+      return res.status(422).json({
         timestamp: new Date().toISOString(),
         path: req.path,
-        status: 400,
+        status: 422,
         code: 'VALIDATION_FAILED',
         message: '리뷰 데이터가 올바르지 않습니다.',
         details: parsed.error.flatten(),

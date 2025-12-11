@@ -103,10 +103,10 @@ const loginSchema = z.object({
 router.post('/signup', async (req, res) => {
   const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: '/auth/signup',
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '요청 데이터가 올바르지 않습니다.',
       details: parsed.error.flatten(),
@@ -169,10 +169,10 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: '/auth/login',
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '요청 데이터가 올바르지 않습니다.',
       details: parsed.error.flatten(),
@@ -246,10 +246,10 @@ router.post('/login', async (req, res) => {
 router.post('/refresh', async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json(
+    return res.status(422).json(
       buildErrorResponse(
         '/auth/refresh',
-        400,
+        422,
         'VALIDATION_FAILED',
         '?”ì²­ ?°ì´?°ê? ?¬ë°”ë¥´ì? ?ŠìŠµ?ˆë‹¤.',
         parsed.error.flatten(),
@@ -398,10 +398,10 @@ router.post('/refresh', async (req, res) => {
 router.post('/logout', async (req, res) => {
   const parsed = refreshSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json(
+    return res.status(422).json(
       buildErrorResponse(
         '/auth/logout',
-        400,
+        422,
         'VALIDATION_FAILED',
         '?”ì²­ ?°ì´?°ê? ?¬ë°”ë¥´ì? ?ŠìŠµ?ˆë‹¤.',
         parsed.error.flatten(),

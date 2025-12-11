@@ -30,10 +30,10 @@ const updateBookSchema = createBookSchema.partial();
 router.post('/', requireAdmin, async (req: AuthRequest, res) => {
   const parsed = createBookSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: '/books',
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '요청 데이터가 올바르지 않습니다.',
       details: parsed.error.flatten(),
@@ -241,10 +241,10 @@ router.patch('/:id', requireAdmin, async (req: AuthRequest, res) => {
 
   const parsed = updateBookSchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: req.path,
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '요청 데이터가 올바르지 않습니다.',
       details: parsed.error.flatten(),

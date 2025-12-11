@@ -60,10 +60,10 @@ function parseCategoryId(raw: string, path: string, res: Response) {
 router.post('/', requireAdmin, async (req, res) => {
   const parsed = createCategorySchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: '/categories',
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '카테고리 요청 본문이 올바르지 않습니다.',
       details: parsed.error.flatten(),
@@ -253,10 +253,10 @@ router.patch('/:id', requireAdmin, async (req, res) => {
 
   const parsed = updateCategorySchema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: req.path,
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '카테고리 요청 본문이 올바르지 않습니다.',
       details: parsed.error.flatten(),

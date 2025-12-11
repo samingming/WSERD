@@ -25,10 +25,10 @@ router.patch('/me', requireAuth, async (req: AuthRequest, res) => {
 
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    return res.status(400).json({
+    return res.status(422).json({
       timestamp: new Date().toISOString(),
       path: '/users/me',
-      status: 400,
+      status: 422,
       code: 'VALIDATION_FAILED',
       message: '이름을 올바르게 입력해 주세요.',
       details: parsed.error.flatten(),
