@@ -1,0 +1,39 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: bookstore
+      MYSQL_USER: book_user
+      MYSQL_PASSWORD: StrongPass123!
+    ports:
+      - "3307:3306" # change host port to avoid conflict if 3306 is already in use
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: mysql://book_user:StrongPass123!@db:3306/bookstore
+      NODE_ENV: ${NODE_ENV:-local}
+      PORT: ${PORT:-2000}
+      PRISMA_CLIENT_ENGINE_TYPE: ${PRISMA_CLIENT_ENGINE_TYPE:-binary}
+    ports:
+      - "2000:2000"
+    command: >-
+      sh -c "npx prisma migrate deploy && node dist/server.js"
+
+volumes:
+  db_data:

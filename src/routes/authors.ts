@@ -209,8 +209,8 @@ router.get('/:id', async (req, res) => {
         createdAt: author.createdAt,
         updatedAt: author.updatedAt,
         latestBooks: books
-          .filter((item) => !!item.book)
-          .map((item) => ({
+          .filter((item: any) => !!item.book)
+          .map((item: any) => ({
             id: item.book.id,
             title: item.book.title,
             price: item.book.price,

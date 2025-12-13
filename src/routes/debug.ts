@@ -14,7 +14,7 @@ router.get('/users', async (req, res) => {
     status: 'OK',
     statusCode: 200,
     message: '유저 목록 조회 성공 (디버그용)',
-    data: users.map((u) => ({
+    data: users.map((u: any) => ({
       id: u.id,
       email: u.email,
       name: u.name,

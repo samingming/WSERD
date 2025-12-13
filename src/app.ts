@@ -15,6 +15,7 @@ import reviewRouter from './routes/reviews';
 import ordersRouter from './routes/orders';
 import statsRouter from './routes/stats';
 import { globalRateLimit, authRateLimit } from './middlewares/rateLimit';
+import { metricsHandler, metricsMiddleware } from './middlewares/metrics';
 import { setupSwagger } from './docs/swagger';
 
 dotenv.config();
@@ -27,6 +28,8 @@ app.use(morgan('dev'));
 app.use(
   morgan(':method :url :status :res[content-length] - :response-time ms'),
 );
+app.use(metricsMiddleware);
+app.get('/metrics', metricsHandler);
 app.use(globalRateLimit);
 app.get('/health', (req, res) => {
   res.status(200).json({

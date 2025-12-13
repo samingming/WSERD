@@ -209,7 +209,7 @@ router.get(
         statusCode: 200,
         message: '리뷰 목록 성공',
         data: {
-          items: items.map((r) => ({
+          items: items.map((r: any) => ({
             id: r.id,
             bookId: r.bookId,
             userId: r.userId,
@@ -446,7 +446,7 @@ router.post(
         });
       }
 
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: any) => {
         // 중복 좋아요 방지
         const existing = await tx.reviewLike.findUnique({
           where: {
@@ -518,7 +518,7 @@ router.delete(
     }
 
     try {
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: any) => {
         const existing = await tx.reviewLike.findUnique({
           where: {
             reviewId_userId: {

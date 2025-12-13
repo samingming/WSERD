@@ -5,8 +5,12 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../db/prisma';
 import { requireAdmin } from '../middlewares/auth';
 import { getPagination, buildPagedResponse } from '../utils/pagination';
+import { buildCacheKey, cache } from '../utils/cache';
 
 const router = Router();
+
+const CATEGORY_LIST_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CATEGORY_CACHE_PREFIX = 'categories:list';
 
 const createCategorySchema = z.object({
   name: z.string().min(1).max(100),
@@ -94,6 +98,8 @@ router.post('/', requireAdmin, async (req, res) => {
       },
     });
 
+    cache.invalidatePrefix(CATEGORY_CACHE_PREFIX);
+
     return res.status(201).json({
       status: 'CREATED',
       statusCode: 201,
@@ -144,7 +150,7 @@ router.get('/', async (req, res) => {
           path: '/categories',
           status: 400,
           code: 'INVALID_QUERY_PARAM',
-          message: 'parentId 쿼리값이 올바르지 않습니다.',
+          message: 'parentId query is invalid.',
           details: { parentId },
         });
       }
@@ -153,6 +159,18 @@ router.get('/', async (req, res) => {
   }
 
   try {
+    const cacheKey = buildCacheKey(CATEGORY_CACHE_PREFIX, {
+      keyword,
+      parentId,
+      sort: pagination.sort,
+      page: pagination.page,
+      size: pagination.size,
+    });
+    const cached = cache.get<any>(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     const [items, total] = await Promise.all([
       prisma.category.findMany({
         where,
@@ -169,12 +187,16 @@ router.get('/', async (req, res) => {
       sort: pagination.sort,
     });
 
-    return res.status(200).json({
+    const responseBody = {
       status: 'OK',
       statusCode: 200,
-      message: '카테고리 목록 조회에 성공했습니다.',
+      message: 'Category list fetched successfully.',
       data: paged,
-    });
+    };
+
+    cache.set(cacheKey, responseBody, CATEGORY_LIST_CACHE_TTL);
+
+    return res.status(200).json(responseBody);
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -182,12 +204,11 @@ router.get('/', async (req, res) => {
       path: '/categories',
       status: 500,
       code: 'INTERNAL_SERVER_ERROR',
-      message: '카테고리 목록을 조회하지 못했습니다.',
+      message: 'Failed to fetch category list.',
       details: null,
     });
   }
 });
-
 router.get('/:id', async (req, res) => {
   const id = parseCategoryId(req.params.id, req.path, res);
   if (id === null) return;
@@ -303,6 +324,8 @@ router.patch('/:id', requireAdmin, async (req, res) => {
       },
     });
 
+    cache.invalidatePrefix(CATEGORY_CACHE_PREFIX);
+
     return res.status(200).json({
       status: 'OK',
       statusCode: 200,
@@ -348,6 +371,8 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     }
 
     await prisma.category.delete({ where: { id } });
+
+    cache.invalidatePrefix(CATEGORY_CACHE_PREFIX);
 
     return res.status(200).json({
       status: 'OK',
