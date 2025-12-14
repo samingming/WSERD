@@ -31,7 +31,7 @@ services:
       PORT: ${PORT:-2000}
       PRISMA_CLIENT_ENGINE_TYPE: ${PRISMA_CLIENT_ENGINE_TYPE:-binary}
     ports:
-      - "10038:2000"
+      - "2000:2000"
     command: >-
       sh -c "npx prisma migrate deploy && node dist/server.js"
 
