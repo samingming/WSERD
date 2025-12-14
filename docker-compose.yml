@@ -27,9 +27,9 @@ services:
       - .env
     environment:
       DATABASE_URL: mysql://book_user:StrongPass123!@db:3306/bookstore
-      NODE_ENV: ${NODE_ENV:-local}
-      PORT: ${PORT:-8080}
-      PRISMA_CLIENT_ENGINE_TYPE: ${PRISMA_CLIENT_ENGINE_TYPE:-binary}
+      NODE_ENV: local
+      PORT: 8080
+      PRISMA_CLIENT_ENGINE_TYPE: binary
     ports:
       - "8080:8080"
     command: >-
