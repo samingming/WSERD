@@ -28,10 +28,10 @@ services:
     environment:
       DATABASE_URL: mysql://book_user:StrongPass123!@db:3306/bookstore
       NODE_ENV: ${NODE_ENV:-local}
-      PORT: ${PORT:-2000}
+      PORT: ${PORT:-8080}
       PRISMA_CLIENT_ENGINE_TYPE: ${PRISMA_CLIENT_ENGINE_TYPE:-binary}
     ports:
-      - "2000:2000"
+      - "8080:8080"
     command: >-
       sh -c "npx prisma migrate deploy && node dist/server.js"
 
